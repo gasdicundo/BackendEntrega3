@@ -1,0 +1,45 @@
+{{#if user.first_name }}
+    <h1>Bienvenido, {{user.first_name}}</h1>
+{{else}}
+    <h1>Bienvenido</h1>
+    <p class="login-reminder">Por favor inicia sesión para realizar una compra.</p>
+{{/if}}
+
+<main>
+    <section>
+        <div class='product-container'> 
+        {{#each products}}
+            <div class="product-card" >
+                <picture>
+                    <img src="/img/{{thumbnail}}" class="product-img" alt="{{title}}" />
+                </picture>
+                <div class="product-details">
+                    <h3 class="product-title">{{title}}</h3>
+                    <p>Código: {{code}}</p>
+                    <p class='price-stock'> 
+                        Precio: ${{price}} | Stock: {{stock}}
+                    </p>
+                </div>
+                {{#isEqual ../user.role 'user'}}
+                    <button class="add-to-cart-button btn btn-primary" data-product-id="{{_id}}" data-cart-id="{{../user.cart}}">
+                        Agregar al Carrito
+                    </button> 
+                {{/isEqual}}
+            </div>
+        {{/each}}
+        </div>
+        <div class="pagination-buttons">
+            {{#if hasPrevPage}}
+                <a href="products?page={{prevPage}}{{#if sort}}&sort={{sort}}{{/if}}{{#if limit}}&limit={{limit}}{{/if}}{{#if category}}&category={{category}}{{/if}}"><button class="btn btn-secondary">Anterior</button></a>
+            {{/if}}
+            {{#if hasNextPage}}
+                <a href="products?page={{nextPage}}{{#if sort}}&sort={{sort}}{{/if}}{{#if limit}}&limit={{limit}}{{/if}}{{#if category}}&category={{category}}{{/if}}"><button class="btn btn-secondary">Siguiente</button></a>
+            {{/if}}
+        </div>
+    </section>
+<footer>
+    <p> En proceso</p>
+</footer>
+</main>
+
+

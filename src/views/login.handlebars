@@ -1,0 +1,23 @@
+<body class="scroll">
+<section class="login-container">
+    <form class="login-form" onsubmit="submitLoginForm(); return false;">
+        <h2 class="form-title">Iniciar Sesión</h2>
+        <input type="text" class="form-control form-input" placeholder="Correo Electrónico" name="email" id="email" required>
+        <input type="password" class="form-control form-input" placeholder="Contraseña" name="password" id="password" required>
+        <div class="options">
+            <p>¿No tienes una cuenta? <a href="signup" class="signup-link">Regístrate</a></p>
+            <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+            <a href="/api/auth/github" class="github-login-link">Ingresar con GitHub</a>
+        </div>
+        <button type="submit" class="form-submit-button">Ingresar</button>
+    </form>
+</section>
+<footer class="login-footer">
+      <p> En proceso</p>
+</footer>
+</body>
+
+
+
+
+
