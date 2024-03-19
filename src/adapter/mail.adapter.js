@@ -10,7 +10,7 @@ class MailAdapter {
                 subject: 'DG Accesorios',
                 html: `
                     <h1>Hola ${messageInfo.first_name}</h1>
-                    <p>Nuestras promociones</p>
+                    <p>Promociones vigentes</p>
                 `,
                });
             console.log('Mensaje enviado correctamente');
