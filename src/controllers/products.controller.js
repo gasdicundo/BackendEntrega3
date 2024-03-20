@@ -1,101 +1,118 @@
-const { Router } = require('express')
-const router = Router()
-const { getProducts } = require('../utils/products.util.js')
-const ProductsService = require('../services/products.service.js')
-const authorization = require('../middlewares/authorization-middleware.js')
+const { Router } = require('express');
+const router = Router();
+const { obtenerProductos } = require('../utils/products.util.js');
+const ServicioProductos = require('../services/products.service.js');
+const middlewareAutorizacion = require('../middlewares/authorization-middleware.js');
+const generarProductosFalsos = require('../utils/mock-products.util');
 
 router.get('/', async (req, res) => {
     try {
-        const { limit, page, sort, category, stock } = req.query
-        const { docs, hasPrevPage, hasNextPage, nextPage, prevPage, totalPages } = await getProducts({ limit, page, sort, category, stock })
+        const { limite, pagina, ordenar, categoria, existencia } = req.query;
+        const { docs, tienePaginaAnterior, tienePaginaSiguiente, siguientePagina, paginaAnterior, totalPaginas } = await obtenerProductos({ limite, pagina, ordenar, categoria, existencia });
 
-        if (totalPages && parseInt(page) > totalPages) {
-            return res.redirect(`/api/products?page=${totalPages}`)
+        if (totalPaginas && parseInt(pagina) > totalPaginas) {
+            return res.redirect(`/api/productos?pagina=${totalPaginas}`);
         }
 
-        const products = docs
-        const { user } = req.session
+        const productos = docs;
+        const { usuario } = req.session;
 
-        res.render('productList', {
-            user,
-            products,
-            hasPrevPage,
-            hasNextPage,
-            nextPage,
-            prevPage,
-            limit,
-            sort,
-            style: 'style.css'
-        })
+        res.render('pagina_principal', {
+            usuario,
+            productos,
+            tienePaginaAnterior,
+            tienePaginaSiguiente,
+            siguientePagina,
+            paginaAnterior,
+            limite,
+            ordenar,
+            estilo: 'estilo-personalizado.css'
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' })
+        console.error('Error al obtener productos:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
-})
+});
 
-router.get('/:pid', async (req, res) => {
+router.get('/productos-falsos', async (req, res) => {
     try {
-        const { pid } = req.params
-        const { user } = req.session
-        const productFilter = await ProductsService.getProductByID(pid)
+        const productosFalsos = generarProductosFalsos();
+        res.json({ mensaje: productosFalsos });
+    } catch (error) {
+        console.error('Error al obtener productos falsos:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
 
-        if (!productFilter) {
-            return res.status(404).json({ error: 'El producto con el id buscado no existe.' })
+router.get('/:idProducto', async (req, res) => {
+    try {
+        const { idProducto } = req.params;
+        const { usuario } = req.session;
+        const producto = await ServicioProductos.obtenerProductoPorId(idProducto);
+
+        if (!producto) {
+            return res.status(404).json({ error: 'El producto con el ID proporcionado no existe.' });
         }
 
-        res.render('productDetail', {
-            user,
-            productFilter,
-            style: 'style.css'
-        })
+        res.render('detalles_producto', {
+            usuario,
+            producto,
+            idProducto,
+            estilo: 'estilo-personalizado.css'
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' })
+        console.error('Error al obtener detalles del producto:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
-})
+});
 
-router.post("/", authorization('admin'), async (req, res) => {
+router.post("/", middlewareAutorizacion('admin'), async (req, res) => {
     try {
-        const { code, description, price, stock, thumbnail, title, category } = req.body
-        const result = await ProductsService.addProduct({ code, description, price, stock, thumbnail, title, category })
+        const { codigo, descripcion, precio, existencia, miniatura, titulo, categoria } = req.body;
+        const resultado = await ServicioProductos.agregarProducto({ codigo, descripcion, precio, existencia, miniatura, titulo, categoria });
 
-        if (result.success) {
-            res.status(201).json({ message: "Producto creado correctamente" })
+        if (resultado.exito) {
+            res.status(201).json({ mensaje: "Producto creado exitosamente" });
         } else {
-            res.status(400).json({ error: result.message })
+            res.status(400).json({ error: resultado.mensaje });
         }
     } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" })
+        console.error("Error al agregar producto:", error.message);
+        res.status(500).json({ error: "Error interno del servidor" });
     }
-})
+});
 
-router.put('/:pid', authorization('admin'), async (req, res) => {
+router.put('/:idProducto', middlewareAutorizacion('admin'), async (req, res) => {
     try {
-        const { pid } = req.params
-        const { ...product } = req.body
+        const { idProducto } = req.params;
+        const { ...datosProducto } = req.body;
 
-        if (!product.title || !product.description || !product.price || !product.code || !product.stock || !product.category) {
-            return res.status(404).json({ error: "Todos los campos son obligatorios. Producto no agregado." })
+        if (!datosProducto.titulo || !datosProducto.descripcion || !datosProducto.precio || !datosProducto.codigo || !datosProducto.existencia || !datosProducto.categoria) {
+            return res.status(400).json({ error: "Todos los campos son requeridos. Producto no actualizado." });
         }
 
-        await ProductsService.updateProduct({ ...product, id: pid })
-        res.json({ message: 'Producto Actualizado correctamente' })
+        await ServicioProductos.actualizarProducto({ ...datosProducto, id: idProducto });
+        res.json({ mensaje: 'Producto actualizado exitosamente' });
     } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' })
+        console.error('Error al actualizar producto:', error.message);
+        res.status(500).json({ error: 'Error al actualizar producto' });
     }
-})
+});
 
-router.delete('/:pid', authorization('admin'), async (req, res) => {
+router.delete('/:idProducto', middlewareAutorizacion('admin'), async (req, res) => {
     try {
-        const { pid } = req.params
-        const result = await ProductsService.deleteProduct(pid)
+        const { idProducto } = req.params;
+        const resultado = await ServicioProductos.eliminarProducto(idProducto);
 
-        if (result === false) {
-            return res.status(404).json({ error: 'El producto con el id buscado no existe.' })
-        } else {
-            res.json({ message: 'Producto borrado correctamente' })
+        if (resultado === false) {
+            return res.status(404).json({ error: 'El producto con el ID proporcionado no existe.' });
         }
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' })
-    }
-})
 
-module.exports = router 
+        res.json({ mensaje: 'Producto eliminado exitosamente' });
+    } catch (error) {
+        console.error('Error al eliminar producto:', error.message);
+        res.status(500).json({ error: 'Error al eliminar producto' });
+    }
+});
+
+module.exports = router;
